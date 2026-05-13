@@ -173,17 +173,39 @@ const SearchView = () => {
     setResults([]);
     
     try {
-      const url = `https://shazam-core.p.rapidapi.com/v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent(query)}`;
+      // CORS-прокси для обхода блокировки
+      const proxyUrls = [
+        'https://api.allorigins.win/raw?url=',
+        'https://corsproxy.io/?',
+        'https://api.codetabs.com/v1/proxy?quest='
+      ];
       
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'x-rapidapi-key': RAPIDAPI_KEY,
-          'x-rapidapi-host': 'shazam-core.p.rapidapi.com'
+      const apiUrl = `https://shazam-core.p.rapidapi.com/v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent(query)}`;
+      const encodedApiUrl = encodeURIComponent(apiUrl);
+      
+      let response = null;
+      let lastError = null;
+      
+      // Пробуем прокси по очереди
+      for (const proxyUrl of proxyUrls) {
+        try {
+          response = await fetch(proxyUrl + encodedApiUrl, {
+            method: 'GET',
+            headers: {
+              'x-rapidapi-key': RAPIDAPI_KEY,
+              'x-rapidapi-host': 'shazam-core.p.rapidapi.com'
+            }
+          });
+          if (response.ok) break;
+        } catch (err) {
+          lastError = err;
+          continue;
         }
-      });
+      }
       
-      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      if (!response || !response.ok) {
+        throw new Error('All proxies failed');
+      }
       
       const data = await response.json();
       let tracks = [];
@@ -196,7 +218,7 @@ const SearchView = () => {
     } catch (err) {
       console.error(err);
       setStatus('error');
-      setErrorMessage('Ошибка поиска. Возможно, CORS блокировка. Попробуйте локально или используйте VPN/прокси.');
+      setErrorMessage('Поиск временно недоступен. Попробуйте позже.');
     }
   };
 
