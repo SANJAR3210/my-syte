@@ -1,0 +1,257 @@
+:root {
+  --bg-app: #0f0f11;
+  --bg-panel: #18181b;
+  --border: #27272a;
+  --text-primary: #e4e4e7;
+  --text-secondary: #71717a;
+  --accent: #ffffff; 
+  --accent-dim: rgba(255, 255, 255, 0.1);
+  --danger: #ef4444;
+  --success: #22c55e;
+  
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 1200px;
+  height: 90vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: -0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo span { color: var(--text-secondary); font-weight: 400; }
+
+main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.tuner-display {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.note-large {
+  font-size: 12rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.1em;
+  color: var(--accent);
+  transition: color 0.1s;
+}
+
+.note-large.flat { opacity: 0.3; } 
+
+.freq-info {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+  margin-top: 1rem;
+}
+
+.chord-badge {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.chord-badge.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.visualizer-container {
+  width: 100%;
+  max-width: 600px;
+  height: 60px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 3rem;
+}
+
+.bar {
+  width: 6px;
+  background: var(--border);
+  border-radius: 2px;
+  transition: height 0.05s linear, background 0.2s;
+}
+
+.bar.active { background: var(--accent); }
+
+.controls {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 1rem 2rem;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn:hover {
+  border-color: var(--text-secondary);
+  background: var(--bg-panel);
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--bg-app);
+  border-color: var(--accent);
+}
+
+.btn.primary:hover {
+  opacity: 0.9;
+}
+
+.btn.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+nav.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  transition: color 0.2s;
+}
+
+.tab-btn:hover { color: var(--text-primary); }
+.tab-btn.active { 
+  color: var(--accent); 
+  font-weight: 600;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.song-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.input-dark {
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  color: white;
+  padding: 1rem;
+  border-radius: 6px;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+/* Анимация появления аккордов */
+@keyframes popIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* Скроллбар для списка аккордов */
+.chord-list {
+  max-height: 150px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.chord-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chord-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chord-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.chord-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+@media (max-width: 600px) {
+  .card-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .btn {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.85rem;
+  }
+}
