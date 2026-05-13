@@ -145,7 +145,7 @@ const TunerView = () => {
     <>
       <div className="tuner-display">
         <div className={`note-large ${note.note === '--' ? 'flat' : ''}`}>{note.note}<span style={{ fontSize: '0.3em', verticalAlign: 'super', fontWeight: 400 }}>{note.octave}</span></div>
-        <div className="freq-info text-mono">{frequency > 0 ? `${frequency} Hz` : 'Waiting for signal...'}{note.note !== '--' && centsDisplay}</div>
+        <div className="freq-info text-mono">{frequency > 0 ? `${frequency} Hz` : 'Waiting for signal...'}{note.note !== '--' ? centsDisplay : null}</div>
         {chord && <div className="chord-badge active">Chord: {chord}</div>}
         {error && <div className="chord-badge" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>{error}</div>}
       </div>
@@ -171,8 +171,10 @@ const SearchView = () => {
     setStatus('loading');
     setErrorMessage('');
     setResults([]);
+    
     try {
       const url = `https://shazam-core.p.rapidapi.com/v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent(query)}`;
+      
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -180,18 +182,21 @@ const SearchView = () => {
           'x-rapidapi-host': 'shazam-core.p.rapidapi.com'
         }
       });
+      
       if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      
       const data = await response.json();
       let tracks = [];
       if (data.tracks?.hits) tracks = data.tracks.hits.map(hit => hit.track);
       else if (Array.isArray(data.tracks)) tracks = data.tracks;
       else if (Array.isArray(data.data)) tracks = data.data.filter(item => item.type === 'songs');
+      
       setResults(tracks);
-      setStatus('success');
+      setStatus(tracks.length > 0 ? 'success' : 'empty');
     } catch (err) {
       console.error(err);
       setStatus('error');
-      setErrorMessage('Ошибка поиска. Проверьте ключ или интернет.');
+      setErrorMessage('Ошибка поиска. Возможно, CORS блокировка. Попробуйте локально или используйте VPN/прокси.');
     }
   };
 
@@ -212,26 +217,37 @@ const SearchView = () => {
           {status === 'loading' ? '...' : 'Search'}
         </button>
       </form>
+      
       {errorMessage && (
         <div className="chord-badge" style={{ borderColor: 'var(--danger)', color: 'var(--danger)', marginBottom: '1rem' }}>{errorMessage}</div>
       )}
-      {status === 'success' && results.length === 0 && (
+      
+      {status === 'empty' && (
         <p style={{ color: 'var(--text-secondary)' }}>Ничего не найдено</p>
       )}
+      
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left' }}>
         {results.map((track, index) => {
           const title = track?.title || track?.subtitle || 'Unknown Title';
           const artist = track?.subtitle || track?.artist?.name || track?.artist || 'Unknown Artist';
-          const cover = track?.images?.coverart || track?.images?.background || track?.share?.subject || 'https://via.placeholder.com/100?text=No+Cover';
+          const cover = track?.images?.coverart || track?.images?.background || 'https://via.placeholder.com/100?text=No+Cover';
           const shareUrl = track?.share?.href || track?.url || '#';
+          
           return (
-            <a key={index} href={shareUrl} target="_blank" rel="noopener noreferrer" className="song-card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', textDecoration: 'none', color: 'inherit', transition: 'background 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.background = 'var(--border)'} onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-panel)'}>
-              <img src={cover} alt={title} style={{ width: '60px', height: '60px', borderRadius: '6px', objectFit: 'cover', background: '#333', flexShrink: 0 }} onError={(e) => { e.target.src = 'https://via.placeholder.com/60?text=?'; }} />
+            <a key={index} href={shareUrl} target="_blank" rel="noopener noreferrer" 
+               className="song-card" 
+               style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', textDecoration: 'none', color: 'inherit' }}>
+              <img src={cover} alt={title} 
+                   style={{ width: '60px', height: '60px', borderRadius: '6px', objectFit: 'cover', background: '#333', flexShrink: 0 }} 
+                   onError={(e) => { e.target.src = 'https://via.placeholder.com/60?text=?'; }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</h4>
-                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{artist}</p>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {title}
+                </h4>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {artist}
+                </p>
               </div>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ opacity: 0.5 }}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
             </a>
           );
         })}
@@ -336,12 +352,70 @@ const GuitarView = () => {
             {currentChords.length > 0 && <button className="btn" onClick={clearCurrentProgression} style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>Clear</button>}
           </div>
           {detectionError && <div className="chord-badge" style={{ borderColor: 'var(--danger)', color: 'var(--danger)', marginBottom: '1rem' }}>{detectionError}</div>}
-          {isRecording && <div style={{ padding: '1rem', background: 'var(--bg-panel)', borderRadius: '6px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}><span className="recording-indicator">●</span><span style={{ fontSize: '0.9rem' }}>Listening... {lastDetectedNote && lastDetectedNote !== '--' && <strong style={{ color: 'var(--accent)' }}>{lastDetectedNote}</strong>}</span></div>}
-          {currentChords.length > 0 && <div><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}><p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Current progression ({currentChords.length} chords):</p><button onClick={() => navigator.clipboard.writeText(currentChords.join(' '))} style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '4px' }} onMouseEnter={(e) => e.target.style.background = 'var(--border)'} onMouseLeave={(e) => e.target.style.background = 'none'}>Copy</button></div><div className="chord-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>{groupedChords.map((group, groupIdx) => (<div key={groupIdx} style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>{group.map((chord, idx) => (<span key={`${groupIdx}-${idx}`} className="chord-badge active" style={{ padding: '0.35rem 0.75rem', fontSize: '0.9rem', animation: 'popIn 0.2s ease-out' }}>{chord}</span>))}</div>))}</div></div>}
+          {isRecording && (
+            <div style={{ padding: '1rem', background: 'var(--bg-panel)', borderRadius: '6px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span className="recording-indicator">●</span>
+              <span style={{ fontSize: '0.9rem' }}>
+                Listening...
+                {lastDetectedNote && lastDetectedNote !== '--' ? (
+                  <strong style={{ color: 'var(--accent)' }}>{lastDetectedNote}</strong>
+                ) : null}
+              </span>
+            </div>
+          )}
+          {currentChords.length > 0 && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Current progression ({currentChords.length} chords):</p>
+                <button onClick={() => navigator.clipboard.writeText(currentChords.join(' '))} style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '4px' }} onMouseEnter={(e) => e.target.style.background = 'var(--border)'} onMouseLeave={(e) => e.target.style.background = 'none'}>Copy</button>
+              </div>
+              <div className="chord-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {groupedChords.map((group, groupIdx) => (
+                  <div key={groupIdx} style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    {group.map((chord, idx) => (
+                      <span key={`${groupIdx}-${idx}`} className="chord-badge active" style={{ padding: '0.35rem 0.75rem', fontSize: '0.9rem', animation: 'popIn 0.2s ease-out' }}>{chord}</span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      {savedSongs.length > 0 && (<><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}><h3 style={{ fontSize: '1.1rem' }}>Saved Songs ({savedSongs.length})</h3><button onClick={() => { if (confirm('Удалить все?')) { setSavedSongs([]); localStorage.removeItem('octave_songs'); } }} style={{ fontSize: '0.75rem', color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' }}>Clear All</button></div><div className="card-grid">{savedSongs.slice().reverse().map(song => (<div key={song.id} className="song-card"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}><h4 style={{ fontWeight: 600, fontSize: '1rem' }}>{song.name}</h4><div style={{ display: 'flex', gap: '0.25rem' }}><button onClick={() => exportSong(song)} className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} title="Export"><IconDownload /></button><button onClick={() => deleteSong(song.id)} className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'var(--danger)' }} title="Delete"><IconStop /></button></div></div><div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>{song.chords.slice(0, 12).map((chord, idx) => (<span key={idx} style={{ padding: '0.15rem 0.5rem', background: '#27272a', borderRadius: '3px', fontSize: '0.75rem' }}>{chord}</span>))}{song.chords.length > 12 && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>+{song.chords.length - 12}</span>}</div><p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{new Date(song.date).toLocaleDateString()} • {song.chords.length} chords</p></div>))}</div></>)}
-      {savedSongs.length === 0 && currentChords.length === 0 && (<div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}><IconGuitar style={{ marginBottom: '1rem', opacity: 0.5 }} /><p>Start recording to capture your chord progression</p></div>)}
+      {savedSongs.length > 0 && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.1rem' }}>Saved Songs ({savedSongs.length})</h3>
+            <button onClick={() => { if (confirm('Удалить все?')) { setSavedSongs([]); localStorage.removeItem('octave_songs'); } }} style={{ fontSize: '0.75rem', color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', padding: '0.5rem' }}>Clear All</button>
+          </div>
+          <div className="card-grid">
+            {savedSongs.slice().reverse().map(song => (
+              <div key={song.id} className="song-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
+                  <h4 style={{ fontWeight: 600, fontSize: '1rem' }}>{song.name}</h4>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    <button onClick={() => exportSong(song)} className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} title="Export"><IconDownload /></button>
+                    <button onClick={() => deleteSong(song.id)} className="btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'var(--danger)' }} title="Delete"><IconStop /></button>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                  {song.chords.slice(0, 12).map((chord, idx) => (
+                    <span key={idx} style={{ padding: '0.15rem 0.5rem', background: '#27272a', borderRadius: '3px', fontSize: '0.75rem' }}>{chord}</span>
+                  ))}
+                  {song.chords.length > 12 && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>+{song.chords.length - 12}</span>}
+                </div>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{new Date(song.date).toLocaleDateString()} • {song.chords.length} chords</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+      {savedSongs.length === 0 && currentChords.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+          <IconGuitar style={{ marginBottom: '1rem', opacity: 0.5 }} />
+          <p>Start recording to capture your chord progression</p>
+        </div>
+      )}
     </div>
   );
 };
