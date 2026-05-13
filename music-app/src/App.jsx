@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './index.css';
 
-// const RAPIDAPI_KEY = '89f48ff25dmshf1508f2383c5625p16374ejsnadf0d6e6a378';
-const API_TOKEN = process.env.REACT_APP_AUDD_API_TOKEN || '';
+const RAPIDAPI_KEY = '89f48ff25dmshf1508f2383c5625p16374ejsnadf0d6e6a378';
 
 const IconMic = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 1 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/></svg>;
 const IconStop = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>;
