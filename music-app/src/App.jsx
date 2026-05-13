@@ -173,45 +173,38 @@ const SearchView = () => {
     setResults([]);
     
     try {
-      const url = `https://shazam-core.p.rapidapi.com/v1/search/multi?search_type=SONGS&offset=0&query=${encodeURIComponent(query)}`;
+      // Обход CORS через JSONP-подобный подход с image/script тегами
+      // Или используем доступные бесплатные API без CORS
       
-      // no-cors mode — CORS ошибки не будет, но ответ будет "opaque" (не читаемый)
-      const response = await fetch(url, {
-        method: 'GET',
-        mode: 'no-cors',
-        headers: {
-          'x-rapidapi-key': RAPIDAPI_KEY,
-          'x-rapidapi-host': 'shazam-core.p.rapidapi.com'
-        }
-      });
+      // Вариант 1: Пробуем iTunes API (нет CORS ограничений)
+      const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=20`;
       
-      // С no-cors response.status всегда 0, response.body null
-      // Это не работает для чтения данных
+      const response = await fetch(itunesUrl);
+      const data = await response.json();
       
-      setStatus('error');
-      setErrorMessage('Поиск недоступен на GitHub Pages из-за CORS. Используйте локальный запуск: npm run dev');
+      let tracks = [];
+      if (data.results) {
+        tracks = data.results.map(item => ({
+          title: item.trackName,
+          artist: item.artistName,
+          cover: item.artworkUrl100?.replace('100x100', '400x400') || 'https://via.placeholder.com/100?text=No+Cover',
+          url: item.trackViewUrl || '#'
+        }));
+      }
+      
+      setResults(tracks);
+      setStatus(tracks.length > 0 ? 'success' : 'empty');
       
     } catch (err) {
       console.error(err);
       setStatus('error');
-      setErrorMessage('Ошибка сети. Попробуйте позже.');
+      setErrorMessage('Ошибка поиска. Попробуйте позже.');
     }
   };
 
   return (
     <div style={{ textAlign: 'center', maxWidth: '600px', width: '100%', margin: '0 auto', padding: '1rem' }}>
       <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Search Music</h2>
-      
-      <div style={{ background: 'var(--bg-panel)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem', border: '1px solid var(--border)' }}>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          ⚠️ Поиск музыки недоступен на GitHub Pages
-        </p>
-        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-          Причина: CORS ограничения браузера.<br/>
-          Решение: Запустите сайт локально через <code>npm run dev</code>
-        </p>
-      </div>
-
       <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
         <input
           type="text"
@@ -220,16 +213,47 @@ const SearchView = () => {
           placeholder="Artist or Song name..."
           className="input-dark"
           style={{ flex: 1, padding: '0.75rem', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-panel)', color: 'white' }}
-          disabled={true}
+          disabled={status === 'loading'}
         />
-        <button type="submit" className="btn primary" disabled={true} style={{ padding: '0 1.5rem', whiteSpace: 'nowrap', opacity: 0.5 }}>
-          Search
+        <button type="submit" className="btn primary" disabled={status === 'loading'} style={{ padding: '0 1.5rem', whiteSpace: 'nowrap' }}>
+          {status === 'loading' ? '...' : 'Search'}
         </button>
       </form>
       
       {errorMessage && (
         <div className="chord-badge" style={{ borderColor: 'var(--danger)', color: 'var(--danger)', marginBottom: '1rem' }}>{errorMessage}</div>
       )}
+      
+      {status === 'empty' && (
+        <p style={{ color: 'var(--text-secondary)' }}>Ничего не найдено</p>
+      )}
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left' }}>
+        {results.map((track, index) => {
+          const title = track?.title || 'Unknown Title';
+          const artist = track?.artist || 'Unknown Artist';
+          const cover = track?.cover || 'https://via.placeholder.com/100?text=No+Cover';
+          const url = track?.url || '#';
+          
+          return (
+            <a key={index} href={url} target="_blank" rel="noopener noreferrer" 
+               className="song-card" 
+               style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', textDecoration: 'none', color: 'inherit' }}>
+              <img src={cover} alt={title} 
+                   style={{ width: '60px', height: '60px', borderRadius: '6px', objectFit: 'cover', background: '#333', flexShrink: 0 }} 
+                   onError={(e) => { e.target.src = 'https://via.placeholder.com/60?text=?'; }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {title}
+                </h4>
+                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {artist}
+                </p>
+              </div>
+            </a>
+          );
+        })}
+      </div>
     </div>
   );
 };
